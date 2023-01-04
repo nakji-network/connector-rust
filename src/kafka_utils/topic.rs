@@ -1,5 +1,6 @@
+use std::fmt;
+
 use semver::Version;
-use protobuf::{Message, MessageDyn};
 
 pub const TOPIC_CONTEXT_SEPARATOR: &str = ".";
 pub const TOPIC_CONTRACT_SEPARATOR: &str = "_";
@@ -19,7 +20,7 @@ pub struct Topic {
 
 impl Topic {
     pub fn new(env: Env, message_type: MessageType, author: String, connector_name: String,
-           version: Version, event_name: String) -> Self {
+               version: Version, event_name: String) -> Self {
         Self {
             env,
             message_type,
@@ -30,21 +31,24 @@ impl Topic {
         }
     }
 
-    pub fn to_str(&self) -> String {
-        vec![self.env.as_str(), self.message_type.as_str(), &self.to_schema()].join(TOPIC_CONTEXT_SEPARATOR)
-    }
-
     fn to_schema(&self) -> String {
         let version = self.version.to_string().replace(TOPIC_CONTEXT_SEPARATOR, TOPIC_CONTRACT_SEPARATOR);
 
         let vec: Vec<&str> = vec![
-            &self.author.as_str(),
+            self.author.as_str(),
             &self.connector_name,
             &version,
             &self.event_name,
         ];
 
         vec.join(TOPIC_CONTEXT_SEPARATOR)
+    }
+}
+
+impl fmt::Display for Topic {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = vec![self.env.as_str(), self.message_type.as_str(), &self.to_schema()].join(TOPIC_CONTEXT_SEPARATOR);
+        write!(f, "{s}")
     }
 }
 
@@ -111,7 +115,7 @@ mod tests {
             message_type: MessageType::FCT,
             author: "nakji".to_string(),
             connector_name: "ethereum".to_string(),
-            version: version.clone(),
+            version,
             event_name: "ethereum_Block".to_string(),
         };
 
@@ -127,7 +131,7 @@ mod tests {
             MessageType::FCT,
             "nakji".to_string(),
             "ethereum".to_string(),
-            version.clone(),
+            version,
             "ethereum_Block".to_string(),
         );
 
@@ -145,11 +149,11 @@ mod tests {
             MessageType::FCT,
             "nakji".to_string(),
             "ethereum".to_string(),
-            version.clone(),
+            version,
             "ethereum_Block".to_string(),
         );
 
-        let schema = topic.to_str();
+        let schema = topic.to_string();
 
         assert_eq!(schema, "dev.fct.nakji.ethereum.3_2_1.ethereum_Block".to_string());
     }

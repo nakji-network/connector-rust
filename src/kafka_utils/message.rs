@@ -1,4 +1,4 @@
-use protobuf::{MessageDyn, MessageFull};
+use protobuf::{MessageDyn};
 use super::{key::Key, topic::Topic};
 
 pub struct Message {
@@ -20,9 +20,8 @@ impl Message {
 #[cfg(test)]
 mod tests {
     use semver::Version;
-    use crate::kafka_utils::proto_test::ethereum::Block;
     use super::*;
-    use super::super::proto_test::{ethereum, utils};
+    use super::super::proto_test::{utils, ethereum::Block};
     use super::super::topic::*;
     use super::super::key::*;
 
@@ -36,7 +35,7 @@ mod tests {
             message_type: MessageType::BF,
             author: "nakji".to_string(),
             connector_name: "ethereum".to_string(),
-            version: version.clone(),
+            version,
             event_name: "ethereum_Block".to_string(),
         };
 
@@ -44,9 +43,9 @@ mod tests {
 
         let message = Message::new(topic.clone(), key.clone(), eth_block.clone());
         let expected = Message {
-            protobuf_message: Box::new(eth_block.clone()),
-            topic: topic.clone(),
-            key: key.clone(),
+            protobuf_message: Box::new(eth_block),
+            topic,
+            key,
         };
 
         assert_eq!(message.topic, expected.topic);

@@ -1,4 +1,4 @@
-use std::{fmt, error, string::FromUtf8Error};
+use std::{error, fmt, string::FromUtf8Error};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Key {
@@ -37,16 +37,11 @@ impl Key {
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        return self.to_string().into_bytes();
-    }
-
-    pub fn to_string(&self) -> String {
-        let string_list: Vec<&str> = vec![&self.namespace, &self.subject];
-        return string_list.join(KEY_DELIMITER);
+        self.to_string().into_bytes()
     }
 
     pub fn parse_key(key: &Vec<u8>) -> Result<Self, ParseKeyError> {
-        if key.len() == 0 {
+        if key.is_empty() {
             return Ok(Self { namespace: Default::default(), subject: Default::default() });
         }
         let key_string = String::from_utf8(key.clone())?;
@@ -55,6 +50,14 @@ impl Key {
             return Err(ParseKeyError::WrongFormat(key_string));
         }
         Ok(Self { namespace: key_list[0].to_string(), subject: key_list[1].to_string() })
+    }
+}
+
+impl fmt::Display for Key {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let string_list: Vec<&str> = vec![&self.namespace, &self.subject];
+        let s = string_list.join(KEY_DELIMITER);
+        write!(f, "{s}")
     }
 }
 

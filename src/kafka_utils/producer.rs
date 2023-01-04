@@ -1,26 +1,21 @@
 use std::process;
 use std::time::Duration;
 
-use protobuf::{MessageDyn, MessageFull, Message as ProtoMessage};
+use log::{debug, error, info, warn};
+use protobuf::MessageDyn;
 use rdkafka::{
     ClientConfig,
-    error::{KafkaError, RDKafkaError, RDKafkaErrorCode},
+    error::{KafkaError, RDKafkaErrorCode},
     producer::{BaseRecord, DefaultProducerContext, Producer as KafkaProducer, ThreadedProducer},
     util::Timeout,
 };
-use rdkafka::error::KafkaResult;
-use rdkafka::Message as kafkaMessage;
 use thiserror::Error;
-use log::{debug, error, info, trace, warn};
+
 use super::{
-    key::Key,
     message::Message,
     topic::{
-        Topic,
-        MessageType,
         TOPIC_CONTEXT_SEPARATOR,
         TOPIC_CONTRACT_SEPARATOR,
-        Env,
     },
 };
 
@@ -87,7 +82,7 @@ impl Producer {
 
         for message in messages {
             let topic = message.topic;
-            self.produce_message(&topic.to_str(), message.key.to_bytes(), message.protobuf_message)?;
+            self.produce_message(&topic.to_string(), message.key.to_bytes(), message.protobuf_message)?;
         }
 
         'retry: loop {
@@ -185,7 +180,7 @@ pub fn get_event_name(protobuf_message: &impl MessageDyn) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::proto_test::{ethereum, utils};
+    use super::super::proto_test::utils;
 
     #[test]
     fn get_event_name_from_protobuf() {

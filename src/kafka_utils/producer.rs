@@ -1,0 +1,196 @@
+use std::process;
+use std::time::Duration;
+
+use protobuf::{MessageDyn, MessageFull, Message as ProtoMessage};
+use rdkafka::{
+    ClientConfig,
+    error::{KafkaError, RDKafkaError, RDKafkaErrorCode},
+    producer::{BaseRecord, DefaultProducerContext, Producer as KafkaProducer, ThreadedProducer},
+    util::Timeout,
+};
+use rdkafka::error::KafkaResult;
+use rdkafka::Message as kafkaMessage;
+use thiserror::Error;
+use log::{debug, error, info, trace, warn};
+use super::{
+    key::Key,
+    message::Message,
+    topic::{
+        Topic,
+        MessageType,
+        TOPIC_CONTEXT_SEPARATOR,
+        TOPIC_CONTRACT_SEPARATOR,
+        Env,
+    },
+};
+
+// the producer will wait for up to the given delay to allow other records to be sent so that the sends can be batched together
+const KAFKA_PRODUCER_LINGER_MS: i32 = 1000;
+
+// the maximum amount of time the client will wait for the response of a request
+const KAFKA_PRODUCER_REQUEST_TIMEOUT_MS: i32 = 60000;
+
+// (10 mins) default 60000 (1 min) https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html
+const KAFKA_PRODUCER_TRANSACTION_TIMEOUT_MS: i32 = 600000;
+
+// default 1000 https://docs.confluent.io/2.0.0/clients/librdkafka/CONFIGURATION_8md.html
+const KAFKA_PRODUCER_QUEUE_BUFFERING_MAX_MS: i32 = 2000;
+
+const KAFKA_COMPRESSION_CODEC: &str = "snappy";
+
+const KAFKA_INIT_TRANSACTION_TIMEOUT: Timeout = Timeout::After(Duration::from_secs(120));
+const KAFKA_COMMIT_TRANSACTION_TIMEOUT: Timeout = Timeout::After(Duration::from_secs(10));
+const KAFKA_ABORT_TRANSACTION_TIMEOUT: Timeout = Timeout::After(Duration::from_secs(10));
+const KAFKA_FLUSH_TIMEOUT: Timeout = Timeout::After(Duration::from_secs(15));
+
+
+pub struct Producer {
+    producer: ThreadedProducer<DefaultProducerContext>,
+    transaction_initialized: bool,
+}
+
+#[derive(Error, Debug)]
+pub enum ProducerError {
+    #[error("failed to marshall protobuf message to bytes")]
+    ConvertBytes(#[from] protobuf::Error),
+    #[error("producer failed to send message to the topic {0}")]
+    Send(String),
+    #[error(transparent)]
+    Kafka(#[from] KafkaError),
+}
+
+
+impl Producer {
+    pub fn new(kafka_url: String, transactional_id: String) -> Self {
+        let producer: ThreadedProducer<_> = ClientConfig::new()
+            .set("bootstrap.servers", kafka_url)
+            .set("transactional.id", transactional_id)
+            .set("linger.ms", KAFKA_PRODUCER_LINGER_MS.to_string())
+            .set("request.timeout.ms", KAFKA_PRODUCER_REQUEST_TIMEOUT_MS.to_string())
+            .set("transaction.timeout.ms", KAFKA_PRODUCER_TRANSACTION_TIMEOUT_MS.to_string())
+            .set("queue.buffering.max.ms", KAFKA_PRODUCER_QUEUE_BUFFERING_MAX_MS.to_string())
+            .set("compression.codec", KAFKA_COMPRESSION_CODEC)
+            .create()
+            .expect("producer creation error");
+
+        Producer { producer, transaction_initialized: false }
+    }
+
+    // TODO: add mutex?
+    pub fn produce_transactional_messages(&mut self, messages: Vec<Message>) -> Result<(), ProducerError> {
+        if !self.transaction_initialized {
+            self.start_producer()?;
+            self.transaction_initialized = true;
+        }
+
+        self.producer.begin_transaction()?;
+
+        for message in messages {
+            let topic = message.topic;
+            self.produce_message(&topic.to_str(), message.key.to_bytes(), message.protobuf_message)?;
+        }
+
+        'retry: loop {
+            let result = self.producer.commit_transaction(KAFKA_COMMIT_TRANSACTION_TIMEOUT);
+            match result {
+                Ok(_) => { break 'retry; }
+                Err(err) => {
+                    match err {
+                        KafkaError::Transaction(rd_err) if rd_err.is_retriable() => {
+                            warn!("failed to commit transactions, retrying...");
+                            continue;
+                        }
+                        e => {
+                            let rd_err_code = e.rdkafka_error_code();
+                            match rd_err_code {
+                                Some(code) => {
+                                    match code {
+                                        RDKafkaErrorCode::ProducerFenced => {
+                                            error!("producer is fenced");
+                                            self.close();
+                                            break 'retry;
+                                        }
+                                        RDKafkaErrorCode::InvalidTransactionTimeout => {
+                                            warn!("failed to commit transactions, timed out");
+                                            break 'retry;
+                                        }
+                                        _ => {
+                                            error!("failed to commit transactions, aborting...");
+                                            self.producer
+                                                .abort_transaction(KAFKA_ABORT_TRANSACTION_TIMEOUT)
+                                                .expect("failed to abort transaction, killing producer..");
+                                            break 'retry;
+                                        }
+                                    }
+                                }
+                                None => {
+                                    error!("failed to commit transactions, aborting...");
+                                    self.producer
+                                        .abort_transaction(KAFKA_ABORT_TRANSACTION_TIMEOUT)
+                                        .expect("failed to abort transaction, killing producer..");
+                                    break 'retry;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        debug!("successfully committed transactions");
+        Ok(())
+    }
+
+    fn close(&self) {
+        info!("flushing outstanding Kafka messages");
+
+        self.producer.flush(KAFKA_FLUSH_TIMEOUT).expect("failed to flush messages");
+        self.producer
+            .abort_transaction(KAFKA_ABORT_TRANSACTION_TIMEOUT)
+            .expect("failed to abort transaction, killing producer..");
+        process::exit(1);
+    }
+
+    fn start_producer(&self) -> Result<(), ProducerError> {
+        self.producer.init_transactions(KAFKA_INIT_TRANSACTION_TIMEOUT)?;
+        Ok(())
+    }
+
+    // TODO: otel metrics and prometheus
+    fn produce_message(&self, topic: &str, key: Vec<u8>, message: Box<dyn MessageDyn>) -> Result<(), ProducerError> {
+        let out_bytes: Vec<u8> = message.write_to_bytes_dyn()?;
+
+        let base_record = BaseRecord::to(topic)
+            .key(&key)
+            .payload(&out_bytes);
+
+        if self.producer.send(base_record).is_err() {
+            return Err(ProducerError::Send(topic.to_string()));
+        }
+        Ok(())
+    }
+}
+
+// todo: move it?
+pub fn get_event_name(protobuf_message: &impl MessageDyn) -> String {
+    let message_descriptor = protobuf_message.descriptor_dyn();
+    message_descriptor.full_name().to_string().replace(TOPIC_CONTEXT_SEPARATOR, TOPIC_CONTRACT_SEPARATOR)
+}
+
+// fn generate_topic_from_proto(env: Env, message_type: MessageType, author: String,  protobuf_message: impl MessageFull) -> Topic {
+//     let event_name = get_event_name(&protobuf_message);
+//     Topic::new(env, message_type, )
+// }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::super::proto_test::{ethereum, utils};
+
+    #[test]
+    fn get_event_name_from_protobuf() {
+        let eth_block = utils::build_block();
+        let event_name = get_event_name(&eth_block);
+        assert_eq!(event_name, "ethereum_Block".to_string())
+    }
+}

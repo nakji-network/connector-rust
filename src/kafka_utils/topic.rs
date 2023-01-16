@@ -1,6 +1,9 @@
 use std::fmt;
+use std::str::FromStr;
 
+use protobuf::MessageDyn;
 use semver::Version;
+use serde::Serialize;
 
 pub const TOPIC_CONTEXT_SEPARATOR: &str = ".";
 pub const TOPIC_CONTRACT_SEPARATOR: &str = "_";
@@ -31,7 +34,7 @@ impl Topic {
         }
     }
 
-    fn to_schema(&self) -> String {
+    pub fn to_schema(&self) -> String {
         let version = self.version.to_string().replace(TOPIC_CONTEXT_SEPARATOR, TOPIC_CONTRACT_SEPARATOR);
 
         let vec: Vec<&str> = vec![
@@ -72,7 +75,22 @@ impl Env {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+impl FromStr for Env {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "test" => Ok(Env::Test),
+            "dev" => Ok(Env::Dev),
+            "staging" => Ok(Env::Staging),
+            "prod" => Ok(Env::Prod),
+            _ => Err(format!("'{}' is not a valid value for topic::Env", s)),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize)]
+#[serde(rename_all(serialize = "lowercase"))]
 pub enum MessageType {
     FCT,
     BF,
@@ -93,9 +111,26 @@ impl MessageType {
     }
 }
 
+pub fn get_event_name(protobuf_message: Box<dyn MessageDyn>) -> String {
+    let message_descriptor = protobuf_message.descriptor_dyn();
+    let full_name = message_descriptor.full_name().to_string();
+    let name_slice: Vec<_> = full_name.split(TOPIC_CONTEXT_SEPARATOR).collect();
+    let event_name = &name_slice[name_slice.len() - 2..].join(TOPIC_CONTRACT_SEPARATOR);
+    event_name.clone()
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::kafka_utils::proto_test::utils;
+
     use super::*;
+
+    #[test]
+    fn get_event_name_from_protobuf() {
+        let eth_block = utils::build_block();
+        let event_name = get_event_name(Box::new(eth_block));
+        assert_eq!(event_name, "chain_Block")
+    }
 
     #[test]
     fn create_new_topic() {
@@ -107,7 +142,7 @@ mod tests {
             "nakji".to_string(),
             "ethereum".to_string(),
             version.clone(),
-            "ethereum_Block".to_string(),
+            "chain_Block".to_string(),
         );
 
         let expected = Topic {
@@ -116,7 +151,7 @@ mod tests {
             author: "nakji".to_string(),
             connector_name: "ethereum".to_string(),
             version,
-            event_name: "ethereum_Block".to_string(),
+            event_name: "chain_Block".to_string(),
         };
 
         assert_eq!(topic, expected);
@@ -132,12 +167,12 @@ mod tests {
             "nakji".to_string(),
             "ethereum".to_string(),
             version,
-            "ethereum_Block".to_string(),
+            "chain_Block".to_string(),
         );
 
         let schema = topic.to_schema();
 
-        assert_eq!(schema, "nakji.ethereum.0_1_0.ethereum_Block".to_string());
+        assert_eq!(schema, "nakji.ethereum.0_1_0.chain_Block");
     }
 
     #[test]
@@ -150,11 +185,11 @@ mod tests {
             "nakji".to_string(),
             "ethereum".to_string(),
             version,
-            "ethereum_Block".to_string(),
+            "chain_Block".to_string(),
         );
 
         let schema = topic.to_string();
 
-        assert_eq!(schema, "dev.fct.nakji.ethereum.3_2_1.ethereum_Block".to_string());
+        assert_eq!(schema, "dev.fct.nakji.ethereum.3_2_1.chain_Block");
     }
 }

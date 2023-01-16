@@ -11,25 +11,19 @@ use rdkafka::{
 };
 use thiserror::Error;
 
-use super::{
-    message::Message,
-    topic::{
-        TOPIC_CONTEXT_SEPARATOR,
-        TOPIC_CONTRACT_SEPARATOR,
-    },
-};
+use super::message::Message;
 
 // the producer will wait for up to the given delay to allow other records to be sent so that the sends can be batched together
-const KAFKA_PRODUCER_LINGER_MS: i32 = 1000;
+const KAFKA_PRODUCER_LINGER_MS: &str = "1000";
 
 // the maximum amount of time the client will wait for the response of a request
-const KAFKA_PRODUCER_REQUEST_TIMEOUT_MS: i32 = 60000;
+const KAFKA_PRODUCER_REQUEST_TIMEOUT_MS: &str = "60000";
 
 // (10 mins) default 60000 (1 min) https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html
-const KAFKA_PRODUCER_TRANSACTION_TIMEOUT_MS: i32 = 600000;
+const KAFKA_PRODUCER_TRANSACTION_TIMEOUT_MS: &str = "600000";
 
 // default 1000 https://docs.confluent.io/2.0.0/clients/librdkafka/CONFIGURATION_8md.html
-const KAFKA_PRODUCER_QUEUE_BUFFERING_MAX_MS: i32 = 2000;
+const KAFKA_PRODUCER_QUEUE_BUFFERING_MAX_MS: &str = "2000";
 
 const KAFKA_COMPRESSION_CODEC: &str = "snappy";
 
@@ -56,14 +50,14 @@ pub enum ProducerError {
 
 
 impl Producer {
-    pub fn new(kafka_url: String, transactional_id: String) -> Self {
+    pub fn new(kafka_url: &str, transactional_id: &str) -> Self {
         let producer: ThreadedProducer<_> = ClientConfig::new()
             .set("bootstrap.servers", kafka_url)
             .set("transactional.id", transactional_id)
-            .set("linger.ms", KAFKA_PRODUCER_LINGER_MS.to_string())
-            .set("request.timeout.ms", KAFKA_PRODUCER_REQUEST_TIMEOUT_MS.to_string())
-            .set("transaction.timeout.ms", KAFKA_PRODUCER_TRANSACTION_TIMEOUT_MS.to_string())
-            .set("queue.buffering.max.ms", KAFKA_PRODUCER_QUEUE_BUFFERING_MAX_MS.to_string())
+            .set("linger.ms", KAFKA_PRODUCER_LINGER_MS)
+            .set("request.timeout.ms", KAFKA_PRODUCER_REQUEST_TIMEOUT_MS)
+            .set("transaction.timeout.ms", KAFKA_PRODUCER_TRANSACTION_TIMEOUT_MS)
+            .set("queue.buffering.max.ms", KAFKA_PRODUCER_QUEUE_BUFFERING_MAX_MS)
             .set("compression.codec", KAFKA_COMPRESSION_CODEC)
             .create()
             .expect("producer creation error");
@@ -163,29 +157,5 @@ impl Producer {
             return Err(ProducerError::Send(topic.to_string()));
         }
         Ok(())
-    }
-}
-
-// todo: move it?
-pub fn get_event_name(protobuf_message: &impl MessageDyn) -> String {
-    let message_descriptor = protobuf_message.descriptor_dyn();
-    message_descriptor.full_name().to_string().replace(TOPIC_CONTEXT_SEPARATOR, TOPIC_CONTRACT_SEPARATOR)
-}
-
-// fn generate_topic_from_proto(env: Env, message_type: MessageType, author: String,  protobuf_message: impl MessageFull) -> Topic {
-//     let event_name = get_event_name(&protobuf_message);
-//     Topic::new(env, message_type, )
-// }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use super::super::proto_test::utils;
-
-    #[test]
-    fn get_event_name_from_protobuf() {
-        let eth_block = utils::build_block();
-        let event_name = get_event_name(&eth_block);
-        assert_eq!(event_name, "ethereum_Block".to_string())
     }
 }

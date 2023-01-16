@@ -21,7 +21,7 @@ impl Message {
 mod tests {
     use semver::Version;
     use super::*;
-    use super::super::proto_test::{utils, ethereum::Block};
+    use super::super::proto_test::{utils, chain::Block};
     use super::super::topic::*;
     use super::super::key::*;
 
@@ -36,7 +36,7 @@ mod tests {
             author: "nakji".to_string(),
             connector_name: "ethereum".to_string(),
             version,
-            event_name: "ethereum_Block".to_string(),
+            event_name: "chain_Block".to_string(),
         };
 
         let key = Key { namespace: "ethereum".to_string(), subject: "Transaction".to_string() };

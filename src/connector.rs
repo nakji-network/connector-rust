@@ -47,20 +47,23 @@ impl Connector {
         let mut topic_types: HashMap<String, Box<dyn MessageDyn>> = HashMap::new();
 
         for message in protobuf_messages {
-            let event_name = topic::get_event_name(message.clone());
-
-            let topic = Topic::new(
-                self.config.kafka_env.clone(),
-                message_type.clone(),
-                self.manifest.author.clone(),
-                self.manifest.name.clone(),
-                self.manifest.version.clone(),
-                event_name,
-            );
-
+            let topic = self.create_topic_for_dynamic_message(message_type.clone(), message.clone());
             topic_types.insert(topic.to_schema(), message);
         }
 
         topic_types
+    }
+
+    pub fn create_topic_for_dynamic_message(&self, message_type: MessageType, message: Box<dyn MessageDyn>) -> Topic {
+        let event_name = topic::get_event_name(message);
+
+        Topic::new(
+            self.config.kafka_env.clone(),
+            message_type,
+            self.manifest.author.clone(),
+            self.manifest.name.clone(),
+            self.manifest.version.clone(),
+            event_name,
+        )
     }
 }

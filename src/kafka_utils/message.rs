@@ -21,7 +21,7 @@ impl Message {
 mod tests {
     use semver::Version;
     use super::*;
-    use super::super::proto_test::{utils, chain::Block};
+    use super::super::proto_test::{utils, evm::Block};
     use super::super::topic::*;
     use super::super::key::*;
 

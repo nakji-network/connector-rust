@@ -8,14 +8,16 @@
 This is a library to help anyone integrate a new data source (aka connector)
 with [Nakji Network](https://nakji.network).
 
-The library handles:
+Roadmap:
 
-- Connector boilerplate
-- Getting configs
-- Publishing and Subscribing to the Nakji message queue
-- Initializing monitoring (TODO)
-- Healthcheck support (TODO)
+- [x] Connector boilerplate
+- [x] Configs
+- [x] Publish and subscribe to the Nakji message queue
+- [ ] Integrate with Tokio
+- [ ] Reduce clone
+- [ ] Initialize monitoring
+- [ ] Healthcheck support
 
-Connector examples are in [examples/](examples). (TODO)
+Connector examples are in [examples/](examples). (WIP)
 
 You can read more documentation on this library in the [Nakji Documentation](https://docs.nakji.network).

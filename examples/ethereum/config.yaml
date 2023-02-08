@@ -1,0 +1,5 @@
+kafka:
+  url: localhost:9092
+  env: staging
+protoregistry:
+  host: http://localhost:9191

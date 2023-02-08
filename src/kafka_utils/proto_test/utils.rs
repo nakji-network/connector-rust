@@ -1,7 +1,7 @@
-use super::chain;
+use super::evm;
 
-pub fn build_block() -> chain::Block {
-    chain::Block {
+pub fn build_block() -> evm::Block {
+    evm::Block {
         ts: Default::default(),
         hash: "".to_string(),
         difficulty: 0,
@@ -13,8 +13,8 @@ pub fn build_block() -> chain::Block {
     }
 }
 
-pub fn build_transaction() -> chain::Transaction {
-    chain::Transaction {
+pub fn build_transaction() -> evm::Transaction {
+    evm::Transaction {
         ts: Default::default(),
         from: vec![],
         hash: "".to_string(),

@@ -129,7 +129,7 @@ mod tests {
     fn get_event_name_from_protobuf() {
         let eth_block = utils::build_block();
         let event_name = get_event_name(Box::new(eth_block));
-        assert_eq!(event_name, "chain_Block")
+        assert_eq!(event_name, "evm_Block")
     }
 
     #[test]
@@ -142,7 +142,7 @@ mod tests {
             "nakji".to_string(),
             "ethereum".to_string(),
             version.clone(),
-            "chain_Block".to_string(),
+            "evm_Block".to_string(),
         );
 
         let expected = Topic {
@@ -151,7 +151,7 @@ mod tests {
             author: "nakji".to_string(),
             connector_name: "ethereum".to_string(),
             version,
-            event_name: "chain_Block".to_string(),
+            event_name: "evm_Block".to_string(),
         };
 
         assert_eq!(topic, expected);
@@ -167,12 +167,12 @@ mod tests {
             "nakji".to_string(),
             "ethereum".to_string(),
             version,
-            "chain_Block".to_string(),
+            "evm_Block".to_string(),
         );
 
         let schema = topic.to_schema();
 
-        assert_eq!(schema, "nakji.ethereum.0_1_0.chain_Block");
+        assert_eq!(schema, "nakji.ethereum.0_1_0.evm_Block");
     }
 
     #[test]

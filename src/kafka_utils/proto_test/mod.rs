@@ -1,4 +1,4 @@
 // @generated
 
-pub mod chain;
+pub mod evm;
 pub(crate) mod utils;

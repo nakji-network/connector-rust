@@ -66,7 +66,7 @@ impl Producer {
     }
 
     // TODO: add mutex?
-    pub fn produce_transactional_messages(&mut self, messages: Vec<Message>) -> Result<(), ProducerError> {
+    pub async fn produce_transactional_messages(&mut self, messages: Vec<Message>) -> Result<(), ProducerError> {
         if !self.transaction_initialized {
             self.start_producer()?;
             self.transaction_initialized = true;

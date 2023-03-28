@@ -13,8 +13,9 @@ Roadmap:
 - [x] Connector boilerplate
 - [x] Configs
 - [x] Publish and subscribe to the Nakji message queue
-- [ ] Integrate with Tokio
-- [ ] Reduce clone
+- [x] Integrate with Tokio
+- [ ] Backfill example
+- [ ] Reduce/Enhance clone
 - [ ] Initialize monitoring
 - [ ] Healthcheck support
 

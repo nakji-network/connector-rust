@@ -32,7 +32,7 @@ impl Connector {
         format!("{}-{}-{}-{:?}", manifest.author, manifest.name, manifest.version, config.kafka_env)
     }
 
-    pub fn register_protobuf(&self, message_type: MessageType, protobuf_messages: Vec<Box<dyn MessageDyn>>) {
+    pub async fn register_protos(&self, message_type: MessageType, protobuf_messages: Vec<Box<dyn MessageDyn>>) {
         if self.config.kafka_env == Env::Dev {
             debug!("protoregistry is disabled in dev mode, set kafka.env to other values (e.g., test, staging) to enable it");
             return;
@@ -40,7 +40,7 @@ impl Connector {
 
         let topic_types = self.build_topic_types(message_type.clone(), protobuf_messages);
 
-        proto_registry::register_dynamic_topics(&self.config.proto_registry_host, topic_types, message_type);
+        proto_registry::register_dynamic_topics(&self.config.proto_registry_host, topic_types, message_type).await;
     }
 
     fn build_topic_types(&self, message_type: MessageType, protobuf_messages: Vec<Box<dyn MessageDyn>>) -> HashMap<String, Box<dyn MessageDyn>> {

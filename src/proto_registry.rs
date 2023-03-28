@@ -22,16 +22,17 @@ struct TopicProtoMsg {
 }
 
 
-pub fn register_dynamic_topics(host: &str, topic_types: HashMap<String, Box<dyn MessageDyn>>, message_type: MessageType) {
+pub async fn register_dynamic_topics(host: &str, topic_types: HashMap<String, Box<dyn MessageDyn>>, message_type: MessageType) {
     let mut topic_proto_messages = build_topic_proto_messages(topic_types, message_type);
     generate_descriptor_files(&mut topic_proto_messages);
     let bytes = serde_json::to_vec(&topic_proto_messages).expect("failed to serialize topic_proto_messages to bytes");
 
-    let client = reqwest::blocking::Client::new();
+    let client = reqwest::Client::new();
 
     let res = client.post(host.to_string() + "/v1/register")
         .body(bytes)
         .send()
+        .await
         .unwrap_or_else(|err| panic!("request to protoregistry failed: {err:?}"));
     info!("response: {:#?}", res);
 }

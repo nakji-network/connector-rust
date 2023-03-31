@@ -15,7 +15,6 @@ Roadmap:
 - [x] Publish and subscribe to the Nakji message queue
 - [x] Integrate with Tokio
 - [ ] Backfill example
-- [ ] Reduce/Enhance clone
 - [ ] Initialize monitoring
 - [ ] Healthcheck support
 

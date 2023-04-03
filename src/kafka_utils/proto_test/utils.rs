@@ -1,5 +1,6 @@
 use super::evm;
 
+#[allow(unused)]
 pub fn build_block() -> evm::Block {
     evm::Block {
         ts: Default::default(),
@@ -13,6 +14,7 @@ pub fn build_block() -> evm::Block {
     }
 }
 
+#[allow(unused)]
 pub fn build_transaction() -> evm::Transaction {
     evm::Transaction {
         ts: Default::default(),

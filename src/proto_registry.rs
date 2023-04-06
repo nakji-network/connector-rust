@@ -58,6 +58,8 @@ fn build_topic_proto_messages(topic_types: HashMap<String, Box<dyn MessageDyn>>,
 fn generate_descriptor_files(topic_proto_messages: &mut Vec<TopicProtoMsg>) {
     let cwd = env::current_dir().expect("failed to get the current working dir");
 
+    println!("cwd: {:#?}", cwd);
+
     for tpm in topic_proto_messages {
         let full_package: Vec<_> = tpm.proto_message_name.split(TOPIC_CONTEXT_SEPARATOR).collect();
         let package = full_package.get(full_package.len() - 2).unwrap_or_else(|| panic!("invalid full package: {:?}", full_package));
@@ -93,7 +95,7 @@ fn generate_descriptor_file(path: &Path) -> String {
         .arg("-I=".to_string() + dir)
         .arg(file)
         .output()
-        .expect("failed to execute process");
+        .expect(&format!("failed to execute process; file: {:#?}", file));
 
     desc_file_name
 }

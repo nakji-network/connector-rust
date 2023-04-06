@@ -86,6 +86,8 @@ fn generate_descriptor_file(path: &Path) -> String {
         return desc_file_name;
     }
 
+    println!("path: {:#?}", path);
+
     let file = path.file_name().unwrap_or_else(|| panic!("failed to get the file name, path: {:?}", path));
     let dir = path.parent().unwrap_or_else(|| panic!("failed to get the path parent, path: {:?}", path)).to_str().expect("failed to convert dir to str");
 
@@ -131,6 +133,10 @@ mod tests {
 
     #[test]
     fn test_generate_descriptor_file() {
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("resources/test");
+
+        println!("manifest dir: {}", d.display());
         let tpm1 = TopicProtoMsg {
             message_type: MessageType::CMD,
             topic_name: "nakji.ethereum.0_0_0.chain_Block".to_string(),

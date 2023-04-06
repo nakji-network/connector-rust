@@ -13,9 +13,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.x'
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
       - name: Build
         run: cargo build --verbose
       - name: Test

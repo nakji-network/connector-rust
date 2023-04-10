@@ -2,6 +2,10 @@
 name = "nakji-connector"
 version = "0.1.0"
 edition = "2021"
+authors = ["Nakji Network"]
+description = "A Rust implementation of nakji-connector."
+repository = "https://github.com/nakji-network/connector-rust"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

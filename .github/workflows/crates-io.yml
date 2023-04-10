@@ -1,0 +1,27 @@
+name: crates.io
+
+on:
+  release:
+    types: [ published ]
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_REGISTRY_TOKEN: ${{ secrets. CARGO_REGISTRY_TOKEN }}
+
+jobs:
+  publish:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+      - name: Publish `nakji-connector`
+        run: cargo publish --token ${CARGO_REGISTRY_TOKEN} -p nakji-connector

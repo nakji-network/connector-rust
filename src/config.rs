@@ -9,6 +9,7 @@ pub struct Config {
     pub kafka_url: String,
     pub kafka_env: Env,
     pub proto_registry_host: String,
+    pub value: serde_yaml::Value,
 }
 
 const CONFIG_KEY_KAFKA: &str = "kafka";
@@ -39,6 +40,7 @@ impl Config {
             kafka_url,
             kafka_env,
             proto_registry_host,
+            value: yaml,
         }
     }
 

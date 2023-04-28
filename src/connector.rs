@@ -21,7 +21,7 @@ impl Connector {
         let id = Connector::id(&manifest, &config);
         let producer = Producer::new(&config.kafka_url, &id);
         
-        config.value = config.sub_config(id.as_str());
+        config.sub_config = config.sub_config(id.as_str());
 
         Connector {
             producer,

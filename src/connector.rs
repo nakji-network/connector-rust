@@ -20,9 +20,8 @@ impl Connector {
         let manifest = Manifest::init();
         let id = Connector::id(&manifest, &config);
         let producer = Producer::new(&config.kafka_url, &id);
-        let sub_config = &config.value[id];
-
-        config.value = sub_config.clone();
+        
+        config.value = config.sub_config(id.as_str());
 
         Connector {
             producer,

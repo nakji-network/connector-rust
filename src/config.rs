@@ -9,7 +9,7 @@ pub struct Config {
     pub kafka_url: String,
     pub kafka_env: Env,
     pub proto_registry_host: String,
-    value: serde_yaml::Value,
+    pub value: serde_yaml::Value,
 }
 
 const CONFIG_KEY_KAFKA: &str = "kafka";

@@ -16,10 +16,14 @@ pub struct Connector {
 
 impl Connector {
     pub fn new() -> Self {
-        let config = Config::init();
+        let mut config = Config::init();
         let manifest = Manifest::init();
         let id = Connector::id(&manifest, &config);
         let producer = Producer::new(&config.kafka_url, &id);
+
+        let sub_config = &config.value[Connector::id(&manifest, &config)];
+
+        config.value = sub_config.clone();
 
         Connector {
             producer,
@@ -30,10 +34,6 @@ impl Connector {
 
     fn id(manifest: &Manifest, config: &Config) -> String {
         format!("{}-{}-{}-{:?}", manifest.author, manifest.name, manifest.version, config.kafka_env)
-    }
-
-    fn config_value(&self) -> serde_yaml::Value {
-        self.config.value[self.id()]
     }
 
     pub async fn register_protos(&self, message_type: MessageType, protobuf_messages: Vec<Box<dyn MessageDyn>>) {

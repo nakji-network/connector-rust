@@ -89,6 +89,12 @@ impl FromStr for Env {
     }
 }
 
+impl fmt::Display for Env {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Serialize)]
 #[serde(rename_all(serialize = "lowercase"))]
 pub enum MessageType {

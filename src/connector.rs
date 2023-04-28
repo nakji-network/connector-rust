@@ -32,6 +32,10 @@ impl Connector {
         format!("{}-{}-{}-{:?}", manifest.author, manifest.name, manifest.version, config.kafka_env)
     }
 
+    fn config_value(&self) -> serde_yaml::Value {
+        self.config.value[self.id()]
+    }
+
     pub async fn register_protos(&self, message_type: MessageType, protobuf_messages: Vec<Box<dyn MessageDyn>>) {
         if self.config.kafka_env == Env::Dev {
             debug!("protoregistry is disabled in dev mode, set kafka.env to other values (e.g., test, staging) to enable it");

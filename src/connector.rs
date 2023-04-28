@@ -16,11 +16,13 @@ pub struct Connector {
 
 impl Connector {
     pub fn new() -> Self {
-        let config = Config::init();
+        let mut config = Config::init();
         let manifest = Manifest::init();
         let id = Connector::id(&manifest, &config);
         let producer = Producer::new(&config.kafka_url, &id);
 
+        config.build_sub_config(id.as_str());
+        
         Connector {
             producer,
             config,

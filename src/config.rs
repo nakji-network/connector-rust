@@ -9,6 +9,7 @@ pub struct Config {
     pub kafka_url: String,
     pub kafka_env: Env,
     pub proto_registry_host: String,
+    pub sub_config: Value,
 }
 
 const CONFIG_KEY_KAFKA: &str = "kafka";
@@ -39,6 +40,7 @@ impl Config {
             kafka_url,
             kafka_env,
             proto_registry_host,
+            sub_config: Value::Null,
         }
     }
 
@@ -58,5 +60,10 @@ impl Config {
         let yaml: Value = serde_yaml::from_reader(file).expect("failed to deserialize the config.yaml");
 
         yaml
+    }
+
+    pub fn build_sub_config(&mut self, path: &str) {
+        let yaml = Self::read_from_file();
+        self.sub_config = yaml[path].clone()
     }
 }

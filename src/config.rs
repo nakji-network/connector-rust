@@ -9,7 +9,7 @@ pub struct Config {
     pub kafka_url: String,
     pub kafka_env: Env,
     pub proto_registry_host: String,
-    pub sub_config: Value,
+    pub value: Value,
 }
 
 const CONFIG_KEY_KAFKA: &str = "kafka";
@@ -40,7 +40,7 @@ impl Config {
             kafka_url,
             kafka_env,
             proto_registry_host,
-            sub_config: yaml,
+            value: yaml,
         }
     }
 
@@ -62,7 +62,12 @@ impl Config {
         yaml
     }
 
-    pub fn sub_config(&self, path: &str) -> Value {
-        return self.sub_config[path].clone();
+    pub fn sub_config(self, path: &str) -> Self {
+        Config {
+            kafka_url: self.kafka_url,
+            kafka_env: self.kafka_env,
+            proto_registry_host: self.proto_registry_host,
+            value: self.value[path].clone(),
+        }
     }
 }

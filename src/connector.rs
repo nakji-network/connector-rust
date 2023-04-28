@@ -31,7 +31,7 @@ impl Connector {
     }
 
     fn id(manifest: &Manifest, config: &Config) -> String {
-        format!("{}-{}-{}-{}", manifest.author, manifest.name, manifest.version, config.kafka_env)
+        format!("{}-{}-{}-{}", manifest.author, manifest.name, manifest.version, config.kafka_env.as_str())
     }
 
     pub async fn register_protos(&self, message_type: MessageType, protobuf_messages: Vec<Box<dyn MessageDyn>>) {

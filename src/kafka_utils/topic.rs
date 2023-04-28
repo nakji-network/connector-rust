@@ -65,7 +65,7 @@ pub enum Env {
 }
 
 impl Env {
-    fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             Env::Test => "test",
             Env::Dev => "dev",
@@ -86,13 +86,6 @@ impl FromStr for Env {
             "prod" => Ok(Env::Prod),
             _ => Err(format!("'{}' is not a valid value for topic::Env", s)),
         }
-    }
-}
-
-impl fmt::Display for Env {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_str())
     }
 }
 

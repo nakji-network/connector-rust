@@ -10,6 +10,8 @@ use walkdir::{DirEntry, WalkDir};
 
 use crate::kafka_utils::{MessageType, TOPIC_CONTEXT_SEPARATOR};
 
+const DESCRIPTOR_OUTPUT_DIR: &str = "DESCRIPTOR_OUTPUT_DIR";
+
 #[derive(Serialize, Debug, PartialEq, Clone)]
 struct TopicProtoMsg {
     #[serde(rename(serialize = "msg_type"))]
@@ -78,14 +80,17 @@ fn get_proto_file_path(base_dir: &PathBuf, file_name: &String) -> Option<DirEntr
 }
 
 fn generate_descriptor_file(path: &Path) -> String {
-    let desc_file_name = path.to_str().unwrap_or_else(|| panic!("failed to convert path to str, path: {:?}", path)).to_string() + ".desc";
+    let file = path.file_name().unwrap_or_else(|| panic!("failed to get the file name, path: {:?}", path)).to_str().expect("failed to convert file to str");
+    let dir = path.parent().unwrap_or_else(|| panic!("failed to get the path parent, path: {:?}", path)).to_str().expect("failed to convert dir to str").trim_end_matches("/");
+
+    let desc_file_name = match env::var(DESCRIPTOR_OUTPUT_DIR) {
+        Ok(output_dir) => format!("{}/{}.desc", output_dir, file),
+        Err(_) => format!("{}/{}.desc", dir, file),
+    };
     if Path::exists(desc_file_name.as_ref()) {
         info!("descriptor file: {} already exists, skip", desc_file_name);
         return desc_file_name;
     }
-
-    let file = path.file_name().unwrap_or_else(|| panic!("failed to get the file name, path: {:?}", path));
-    let dir = path.parent().unwrap_or_else(|| panic!("failed to get the path parent, path: {:?}", path)).to_str().expect("failed to convert dir to str");
 
     Command::new("protoc")
         .arg("--include_imports")

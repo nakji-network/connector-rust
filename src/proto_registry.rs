@@ -31,7 +31,7 @@ pub async fn register_dynamic_topics(host: &str, topic_types: HashMap<String, Bo
 
     let client = reqwest::Client::new();
 
-    let res = client.post(host.to_string() + "/v1/register")
+    let res = client.post(format!("http://{}/v1/register", host))
         .body(bytes)
         .send()
         .await

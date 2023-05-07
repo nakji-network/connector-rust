@@ -63,6 +63,7 @@ impl Producer {
                 KAFKA_PRODUCER_QUEUE_BUFFERING_MAX_MS,
             )
             .set("compression.codec", KAFKA_COMPRESSION_CODEC)
+            .set("debug", "all")
             .create()
             .expect("producer creation error");
 

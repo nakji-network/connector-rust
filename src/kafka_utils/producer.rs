@@ -78,7 +78,9 @@ impl Producer {
         messages: Vec<Message>,
     ) -> Result<(), ProducerError> {
         if !self.transaction_initialized {
+            info!("starting producer");
             self.start_producer()?;
+            info!("started producer");
             self.transaction_initialized = true;
         }
 

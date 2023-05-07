@@ -78,15 +78,15 @@ impl Producer {
         messages: Vec<Message>,
     ) -> Result<(), ProducerError> {
         if !self.transaction_initialized {
-            info!("starting producer");
+            println!("starting producer");
             self.start_producer()?;
-            info!("started producer");
+            println!("started producer");
             self.transaction_initialized = true;
         }
 
-        info!("starting transaction");
+        println!("starting transaction");
         self.producer.begin_transaction()?;
-        info!("started transaction");
+        println!("started transaction");
 
         for message in messages {
             let topic = message.topic;
